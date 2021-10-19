@@ -29,16 +29,16 @@ namespace ResearchAndProblemLaboratory
                 worker.Execute();
                 foreach (var task in basicQueue)
                 {
-                    if(task.Sdl >= timer)
+                    if (task.Sdl >= timer)
                     {
-                        if(!worker.IsBusy)
+                        if (!worker.IsBusy)
                         {
-                            worker.StartTask(task, timer);
+                            worker.StartTask(task, timer, basicQueue);
                         }
                         else if (worker.IsTaskFromPoorQueue)
                         {
                             worker.SendTaskToPoorQueue(poorQueue);
-                            worker.StartTask(task, timer);
+                            worker.StartTask(task, timer, basicQueue);
                         }
                     }
                     else
@@ -46,6 +46,12 @@ namespace ResearchAndProblemLaboratory
                         basicQueue.Remove(task);
                         poorQueue.Add(task);
                     }
+                }
+
+                if (!worker.IsBusy && poorQueue.Count > 0)
+                {
+                    var taskToStart = poorQueue.First();
+                    worker.StartTask(taskToStart, timer, poorQueue, true);
                 }
             }
 
@@ -63,12 +69,13 @@ namespace ResearchAndProblemLaboratory
                 IsBusy = false;
             }
 
-            public void StartTask(TaskDefinition task, double timer, bool isTaskFromPoorQueue = false)
+            public void StartTask(TaskDefinition task, double timer, List<TaskDefinition> queue, bool isTaskFromPoorQueue = false)
             {
                 CurrentTask = task;
                 CurrentTaskEndTime = timer + task.RemainingTime;
                 IsBusy = true;
                 IsTaskFromPoorQueue = isTaskFromPoorQueue;
+                queue.Remove(task);
             }
 
             public void SendTaskToPoorQueue(List<TaskDefinition> poorQueue)
@@ -79,7 +86,7 @@ namespace ResearchAndProblemLaboratory
 
             public void Execute()
             {
-                if(CurrentTask != null)
+                if (CurrentTask != null)
                 {
                     CurrentTask.RemainingTime -= 0.01;
                     if (CurrentTask.RemainingTime == 0)
