@@ -23,7 +23,8 @@ namespace ResearchAndProblemLaboratory
 
             while (true)
             {
-                if (timer > 2) break;
+                if (timer > 200)
+                    break;
 
                 var tasksArrived = tasks.Where(x => x.TS == timer).ToList();
 
@@ -95,7 +96,7 @@ namespace ResearchAndProblemLaboratory
             {
                 if (CurrentTask != null)
                 {
-                    CurrentTask.RemainingTime -= 0.01;
+                    CurrentTask.RemainingTime = Math.Round(CurrentTask.RemainingTime - 0.01, 2);
                     if (CurrentTask.RemainingTime == 0)
                     {
                         IsBusy = false;
