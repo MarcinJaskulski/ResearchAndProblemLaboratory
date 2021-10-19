@@ -8,29 +8,87 @@ namespace ResearchAndProblemLaboratory
     {
         const int Counter = 250;
         const int Phazes = 5;
+        const double DTMax = 10;
 
         static void Main(string[] args)
         {
+
+            var tasks = DataGenerator.GenerateTasks(Counter, Phazes, DTMax);
+
+
             double timer = 0;
-            var result = new List<TaskDefinition>();
-            int taskCounter = 0;
-
-            for (int i = 0; i < 5; i++)
+            var worker = new Worker();
+            var basicQueue = new List<TaskDefinition>();
+            var poorQueue = new List<TaskDefinition>();
+            while (true)
             {
-                var erlangs = DataGenerator.GetErlangDistribution(Counter / Phazes, 2, 0.5);
-                var expontentials = 
-                    i%2 == 0 ?
-                    DataGenerator.GetExponentialDistribution(Counter / Phazes, 0.5) :
-                    DataGenerator.GetExponentialDistribution(Counter / Phazes, 0.2);
+                var tasksArrived = tasks.Where(x => x.TS == timer);
 
-                foreach (var (erlang, expon) in erlangs.Zip(expontentials))
+                basicQueue.AddRange(tasksArrived);
+
+                worker.Execute();
+                foreach (var task in basicQueue)
                 {
-                    timer += expon;
-                    result.Add(new TaskDefinition(taskCounter++, erlang, timer));
-                    Console.WriteLine(result.Last().ToString());
+                    if(task.Sdl >= timer)
+                    {
+                        if(!worker.IsBusy)
+                        {
+                            worker.StartTask(task, timer);
+                        }
+                        else if (worker.IsTaskFromPoorQueue)
+                        {
+                            worker.SendTaskToPoorQueue(poorQueue);
+                            worker.StartTask(task, timer);
+                        }
+                    }
+                    else
+                    {
+                        basicQueue.Remove(task);
+                        poorQueue.Add(task);
+                    }
                 }
             }
 
+        }
+
+        public class Worker
+        {
+            public bool IsTaskFromPoorQueue { get; set; }
+            public bool IsBusy { get; set; }
+            public TaskDefinition CurrentTask { get; set; }
+            public double CurrentTaskEndTime { get; set; }
+
+            public Worker()
+            {
+                IsBusy = false;
+            }
+
+            public void StartTask(TaskDefinition task, double timer, bool isTaskFromPoorQueue = false)
+            {
+                CurrentTask = task;
+                CurrentTaskEndTime = timer + task.RemainingTime;
+                IsBusy = true;
+                IsTaskFromPoorQueue = isTaskFromPoorQueue;
+            }
+
+            public void SendTaskToPoorQueue(List<TaskDefinition> poorQueue)
+            {
+                poorQueue.Insert(0, CurrentTask);
+                CurrentTask = null;
+            }
+
+            public void Execute()
+            {
+                if(CurrentTask != null)
+                {
+                    CurrentTask.RemainingTime -= 0.01;
+                    if (CurrentTask.RemainingTime == 0)
+                    {
+                        IsBusy = false;
+                        IsTaskFromPoorQueue = false;
+                    }
+                }
+            }
         }
     }
 }
