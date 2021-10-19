@@ -7,7 +7,7 @@ namespace ResearchAndProblemLaboratory
 {
     public static class DataGenerator
     {
-        public static IEnumerable<TaskDefinition> GenerateTasks(int numberOfTasks, int phazes, double DTMax)
+        public static List<TaskDefinition> GenerateTasks(int numberOfTasks, int phazes, double DTMax)
         {
             double timer = 0;
             var result = new List<TaskDefinition>();

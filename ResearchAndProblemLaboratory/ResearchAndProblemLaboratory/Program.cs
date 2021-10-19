@@ -23,12 +23,16 @@ namespace ResearchAndProblemLaboratory
 
             while (true)
             {
-                if (timer > 200)
+                if (tasks.Count == 0 && 
+                    basicQueue.Count ==0 && 
+                    poorQueue.Count == 0 &&
+                    !worker.IsBusy)
                     break;
 
                 var tasksArrived = tasks.Where(x => x.TS == timer).ToList();
 
                 basicQueue.AddRange(tasksArrived);
+                tasksArrived.ForEach(t => tasks.Remove(t));
 
                 worker.Execute();
                 //foreach (var task in basicQueue)
@@ -72,6 +76,8 @@ namespace ResearchAndProblemLaboratory
             public TaskDefinition CurrentTask { get; set; }
             public double CurrentTaskEndTime { get; set; }
 
+            private static int _endedTasksCounter = 0;
+
             public Worker()
             {
                 IsBusy = false;
@@ -102,8 +108,9 @@ namespace ResearchAndProblemLaboratory
                         IsBusy = false;
                         IsTaskFromPoorQueue = false;
 
-                        Console.WriteLine($"Zakończył się: {CurrentTask.Id}");
+                        Console.WriteLine($"Zakończył się: {CurrentTask.Id}; Task nr: {++_endedTasksCounter}");
                         CurrentTask = null;
+
                     }
                 }
             }
