@@ -20,15 +20,20 @@ namespace ResearchAndProblemLaboratory
             var worker = new Worker();
             var basicQueue = new List<TaskDefinition>();
             var poorQueue = new List<TaskDefinition>();
+
             while (true)
             {
-                var tasksArrived = tasks.Where(x => x.TS == timer);
+                if (timer > 2) break;
+
+                var tasksArrived = tasks.Where(x => x.TS == timer).ToList();
 
                 basicQueue.AddRange(tasksArrived);
 
                 worker.Execute();
-                foreach (var task in basicQueue)
+                //foreach (var task in basicQueue)
+                for (int i = 0; i < basicQueue.Count; i++)
                 {
+                    var task = basicQueue[i];
                     if (task.Sdl >= timer)
                     {
                         if (!worker.IsBusy)
@@ -53,6 +58,8 @@ namespace ResearchAndProblemLaboratory
                     var taskToStart = poorQueue.First();
                     worker.StartTask(taskToStart, timer, poorQueue, true);
                 }
+
+                timer = Math.Round(timer + 0.01, 2);
             }
 
         }
@@ -93,6 +100,9 @@ namespace ResearchAndProblemLaboratory
                     {
                         IsBusy = false;
                         IsTaskFromPoorQueue = false;
+
+                        Console.WriteLine($"Zakończył się: {CurrentTask.Id}");
+                        CurrentTask = null;
                     }
                 }
             }

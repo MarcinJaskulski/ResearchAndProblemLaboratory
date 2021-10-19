@@ -23,8 +23,8 @@ namespace ResearchAndProblemLaboratory
 
                 foreach (var (erlang, expon) in erlangs.Zip(expontentials))
                 {
-                    timer += expon;
-                    result.Add(new TaskDefinition(taskCounter++, erlang, timer, DTMax));
+                    //timer += expon;
+                    result.Add(new TaskDefinition(taskCounter++, erlang, expon, DTMax));
                     Console.WriteLine(result.Last().ToString());
                 }
             }
