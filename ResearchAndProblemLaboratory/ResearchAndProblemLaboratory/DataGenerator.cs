@@ -23,8 +23,8 @@ namespace ResearchAndProblemLaboratory
 
                 foreach (var (erlang, expon) in erlangs.Zip(expontentials))
                 {
-                    //timer += expon;
-                    result.Add(new TaskDefinition(taskCounter++, erlang, expon, DTMax));
+                    timer = Math.Round(timer + expon, 2);
+                    result.Add(new TaskDefinition(taskCounter++, timer, erlang, DTMax));
                     Console.WriteLine(result.Last().ToString());
                 }
             }
@@ -43,7 +43,7 @@ namespace ResearchAndProblemLaboratory
         {
             double[] values = new double[counter];
             Exponential.Samples(new Random(), values, rate);
-            return values.Select(x=>Math.Round(x,2)).ToArray();
+            return values.Select(x => Math.Round(x, 2)).ToArray();
         }
     }
 }
