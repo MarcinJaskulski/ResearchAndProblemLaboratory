@@ -7,7 +7,7 @@ namespace ResearchAndProblemLaboratory
 {
     public static class DataGenerator
     {
-        public static IEnumerable<TaskDefinition> GenerateTasks(int numberOfTasks, int phazes, double DTMax)
+        public static List<TaskDefinition> GenerateTasks(int numberOfTasks, int phazes, double DTMax)
         {
             double timer = 0;
             var result = new List<TaskDefinition>();
@@ -23,8 +23,8 @@ namespace ResearchAndProblemLaboratory
 
                 foreach (var (erlang, expon) in erlangs.Zip(expontentials))
                 {
-                    timer += expon;
-                    result.Add(new TaskDefinition(taskCounter++, erlang, timer, DTMax));
+                    timer = Math.Round(timer + expon, 2);
+                    result.Add(new TaskDefinition(taskCounter++, timer, erlang, DTMax));
                     Console.WriteLine(result.Last().ToString());
                 }
             }
@@ -43,7 +43,7 @@ namespace ResearchAndProblemLaboratory
         {
             double[] values = new double[counter];
             Exponential.Samples(new Random(), values, rate);
-            return values.Select(x=>Math.Round(x,2)).ToArray();
+            return values.Select(x => Math.Round(x, 2)).ToArray();
         }
     }
 }

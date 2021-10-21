@@ -20,15 +20,25 @@ namespace ResearchAndProblemLaboratory
             var worker = new Worker();
             var basicQueue = new List<TaskDefinition>();
             var poorQueue = new List<TaskDefinition>();
+
             while (true)
             {
-                var tasksArrived = tasks.Where(x => x.TS == timer);
+                if (tasks.Count == 0 && 
+                    basicQueue.Count ==0 && 
+                    poorQueue.Count == 0 &&
+                    !worker.IsBusy)
+                    break;
+
+                var tasksArrived = tasks.Where(x => x.TS == timer).ToList();
 
                 basicQueue.AddRange(tasksArrived);
+                tasksArrived.ForEach(t => tasks.Remove(t));
 
                 worker.Execute();
-                foreach (var task in basicQueue)
+                //foreach (var task in basicQueue)
+                for (int i = 0; i < basicQueue.Count; i++)
                 {
+                    var task = basicQueue[i];
                     if (task.Sdl >= timer)
                     {
                         if (!worker.IsBusy)
@@ -53,6 +63,8 @@ namespace ResearchAndProblemLaboratory
                     var taskToStart = poorQueue.First();
                     worker.StartTask(taskToStart, timer, poorQueue, true);
                 }
+
+                timer = Math.Round(timer + 0.01, 2);
             }
 
         }
@@ -63,6 +75,8 @@ namespace ResearchAndProblemLaboratory
             public bool IsBusy { get; set; }
             public TaskDefinition CurrentTask { get; set; }
             public double CurrentTaskEndTime { get; set; }
+
+            private static int _endedTasksCounter = 0;
 
             public Worker()
             {
@@ -88,11 +102,15 @@ namespace ResearchAndProblemLaboratory
             {
                 if (CurrentTask != null)
                 {
-                    CurrentTask.RemainingTime -= 0.01;
+                    CurrentTask.RemainingTime = Math.Round(CurrentTask.RemainingTime - 0.01, 2);
                     if (CurrentTask.RemainingTime == 0)
                     {
                         IsBusy = false;
                         IsTaskFromPoorQueue = false;
+
+                        Console.WriteLine($"Zakończył się: {CurrentTask.Id}; Task nr: {++_endedTasksCounter}");
+                        CurrentTask = null;
+
                     }
                 }
             }
