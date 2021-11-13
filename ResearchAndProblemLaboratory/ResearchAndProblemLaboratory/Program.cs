@@ -12,14 +12,16 @@ namespace ResearchAndProblemLaboratory
 
         static void Main(string[] args)
         {
-            var avgTaskLength = 0.8;
+            var avgTaskLength = 0.25;
             var deltaTaskLength = 0;
-            var avgInterval = 1;
-            var deltaInterval = 0.99;
+            var avgInterval = 0.375;
+            var deltaInterval = 0.125;
             DataGenerator.avgTaskLength1 = avgTaskLength - deltaTaskLength;
             DataGenerator.avgtaskLength2 = avgTaskLength + deltaTaskLength;
             DataGenerator.avgInterval1 = avgInterval - deltaInterval;
             DataGenerator.avgInterval2 = avgInterval + deltaInterval;
+            DataGenerator.erlangShape = 2;
+            DataGenerator.avgTaskLengthErlang = avgTaskLength;
 
             if (avgTaskLength <= deltaTaskLength || avgInterval <= deltaInterval)
             {
