@@ -6,15 +6,28 @@ namespace ResearchAndProblemLaboratory
 {
     class Program
     {
-        const int Counter = 250;
-        const int Phazes = 5;
+        const int Counter = 6000;
+        const int Phazes = 6;
         const double DTMax = 10;
 
         static void Main(string[] args)
         {
+            var avgTaskLength = 0.8;
+            var deltaTaskLength = 0;
+            var avgInterval = 1;
+            var deltaInterval = 0.99;
+            DataGenerator.avgTaskLength1 = avgTaskLength - deltaTaskLength;
+            DataGenerator.avgtaskLength2 = avgTaskLength + deltaTaskLength;
+            DataGenerator.avgInterval1 = avgInterval - deltaInterval;
+            DataGenerator.avgInterval2 = avgInterval + deltaInterval;
+
+            if (avgTaskLength <= deltaTaskLength || avgInterval <= deltaInterval)
+            {
+                throw new InvalidOperationException("Delta musi być mniejsza niż średnia");
+            }
 
             var tasks = DataGenerator.GenerateTasks(Counter, Phazes, DTMax);
-
+            var tasksCopy = new List<TaskDefinition>(tasks);
 
             double timer = 0;
             var worker = new Worker();
@@ -23,8 +36,8 @@ namespace ResearchAndProblemLaboratory
 
             while (true)
             {
-                if (tasks.Count == 0 && 
-                    basicQueue.Count ==0 && 
+                if (tasks.Count == 0 &&
+                    basicQueue.Count == 0 &&
                     poorQueue.Count == 0 &&
                     !worker.IsBusy)
                     break;
@@ -66,7 +79,20 @@ namespace ResearchAndProblemLaboratory
 
                 timer = Math.Round(timer + 0.01, 2);
             }
+            var lambda = tasksCopy.Count / tasksCopy[tasksCopy.Count - 1].TS;
 
+            var avgTp = tasksCopy.Sum(x => x.Tp) / tasksCopy.Count;
+            var mi = 1 / avgTp;
+            Console.WriteLine(lambda / mi);
+            Console.WriteLine(StandardDeviation(tasksCopy.Select(x => x.Tp).ToArray()));
+            Console.WriteLine(StandardDeviation(tasksCopy.Select(x => x.Interval).ToArray()));
+        }
+
+        private static double StandardDeviation(double[] someDoubles)
+        {
+            double average = someDoubles.Average();
+            double sumOfSquaresOfDifferences = someDoubles.Select(val => (val - average) * (val - average)).Sum();
+            return Math.Sqrt(sumOfSquaresOfDifferences / someDoubles.Length);
         }
 
         public class Worker
@@ -107,8 +133,8 @@ namespace ResearchAndProblemLaboratory
                     {
                         IsBusy = false;
                         IsTaskFromPoorQueue = false;
-
-                        Console.WriteLine($"Zakończył się: {CurrentTask.Id}; Task nr: {++_endedTasksCounter}");
+                        Console.Title = $"{++_endedTasksCounter}";
+                        //Console.WriteLine($"Zakończył się: {CurrentTask.Id}; Task nr: {++_endedTasksCounter}");
                         CurrentTask = null;
 
                     }

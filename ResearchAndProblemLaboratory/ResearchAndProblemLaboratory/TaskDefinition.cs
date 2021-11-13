@@ -7,14 +7,16 @@
         public double Tp { get; set; }
         public double Sdl { get; set; }
         public double RemainingTime { get; set; }
+        public double Interval { get; set; }
 
-        public TaskDefinition(int id, double ts, double tp, double DTMax)
+        public TaskDefinition(int id, double ts, double tp, double DTMax, double interval)
         {
             Id = id;
             TS = ts;
-            Tp = tp;
+            Tp = tp == 0 ? 0.01 : tp;
             Sdl = ts + DTMax;
             RemainingTime = Tp;
+            Interval = interval;
         }
 
         public override string ToString() =>

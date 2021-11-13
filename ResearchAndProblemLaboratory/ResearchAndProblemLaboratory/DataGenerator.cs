@@ -7,7 +7,40 @@ namespace ResearchAndProblemLaboratory
 {
     public static class DataGenerator
     {
+        public static double avgTaskLength1;
+        public static double avgtaskLength2;
+        public static double avgInterval2;
+        public static double avgInterval1;
         public static List<TaskDefinition> GenerateTasks(int numberOfTasks, int phazes, double DTMax)
+        {
+            double timer = 0;
+            var result = new List<TaskDefinition>();
+            int taskCounter = 0;
+
+            for (int i = 0; i < phazes; i++)
+            {
+                var taskLengths =
+                    i % 2 == 0 ?
+                    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgTaskLength1) :
+                    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgtaskLength2);
+                var intervals =
+                    i % 2 == 0 ?
+                    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgInterval1) :
+                    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgInterval2);
+
+                foreach (var (taskLength, interval) in taskLengths.Zip(intervals))
+                {
+                    var previousTimer = timer;
+                    timer = Math.Round(timer + interval, 2);
+                    result.Add(new TaskDefinition(taskCounter++, timer, taskLength, DTMax, timer - previousTimer));
+                    Console.WriteLine(result.Last().ToString());
+                }
+            }
+
+            return result;
+        }
+
+        public static List<TaskDefinition> GenerateTasks(int numberOfTasks, int phazes, double DTMax, double relativeSizeOfSubset1, double relativeSizeOfSubset2)
         {
             double timer = 0;
             var result = new List<TaskDefinition>();
@@ -15,16 +48,20 @@ namespace ResearchAndProblemLaboratory
 
             for (int i = 0; i < 5; i++)
             {
-                var erlangs = GetErlangDistribution(numberOfTasks / phazes, 2, 0.5);
-                var expontentials =
+                var taskLengths =
                     i % 2 == 0 ?
-                    GetExponentialDistribution(numberOfTasks / phazes, 0.5) :
-                    GetExponentialDistribution(numberOfTasks / phazes, 0.2);
+                    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgTaskLength1) :
+                    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgtaskLength2);
+                var intervals =
+                    i % 2 == 0 ?
+                    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgInterval1) :
+                    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgInterval2);
 
-                foreach (var (erlang, expon) in erlangs.Zip(expontentials))
+                foreach (var (taskLength, interval) in taskLengths.Zip(intervals))
                 {
-                    timer = Math.Round(timer + expon, 2);
-                    result.Add(new TaskDefinition(taskCounter++, timer, erlang, DTMax));
+                    var previousTimer = timer;
+                    timer = Math.Round(timer + interval, 2);
+                    result.Add(new TaskDefinition(taskCounter++, timer, taskLength, DTMax, timer - previousTimer));
                     Console.WriteLine(result.Last().ToString());
                 }
             }
