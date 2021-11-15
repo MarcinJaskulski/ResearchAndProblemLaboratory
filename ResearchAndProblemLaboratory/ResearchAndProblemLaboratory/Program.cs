@@ -12,23 +12,27 @@ namespace ResearchAndProblemLaboratory
 
         static void Main(string[] args)
         {
-            var avgTaskLength = 0.25;
-            var deltaTaskLength = 0;
-            var avgInterval = 0.375;
-            var deltaInterval = 0.125;
-            DataGenerator.avgTaskLength1 = avgTaskLength - deltaTaskLength;
-            DataGenerator.avgtaskLength2 = avgTaskLength + deltaTaskLength;
+            //to nieważne
+            //var deltaTaskLength = 0;
+            //DataGenerator.avgTaskLength1 = avgTaskLength - deltaTaskLength;
+            //DataGenerator.avgtaskLength2 = avgTaskLength + deltaTaskLength;
+
+
+            var avgTaskLength = 0.5;
+            var avgInterval = 1;
+            var deltaInterval = 0.7;
+            
             DataGenerator.avgInterval1 = avgInterval - deltaInterval;
             DataGenerator.avgInterval2 = avgInterval + deltaInterval;
-            DataGenerator.erlangShape = 2;
+            DataGenerator.erlangShape = 1;
             DataGenerator.avgTaskLengthErlang = avgTaskLength;
 
-            if (avgTaskLength <= deltaTaskLength || avgInterval <= deltaInterval)
+            if (avgInterval <= deltaInterval)
             {
                 throw new InvalidOperationException("Delta musi być mniejsza niż średnia");
             }
 
-            var tasks = DataGenerator.GenerateTasks(Counter, Phazes, DTMax);
+            var tasks = DataGenerator.GenerateTasksWithErlang(Counter, Phazes, DTMax);
             var tasksCopy = new List<TaskDefinition>(tasks);
 
             double timer = 0;
@@ -83,11 +87,12 @@ namespace ResearchAndProblemLaboratory
             }
             var lambda = tasksCopy.Count / tasksCopy[tasksCopy.Count - 1].TS;
 
-            var avgTp = tasksCopy.Sum(x => x.Tp) / tasksCopy.Count;
+            var avgTp = tasksCopy.Average(x=>x.Tp);
+            var avgIntervalResult = tasksCopy.Average(x => x.Interval);
             var mi = 1 / avgTp;
-            Console.WriteLine(lambda / mi);
-            Console.WriteLine(StandardDeviation(tasksCopy.Select(x => x.Tp).ToArray()));
-            Console.WriteLine(StandardDeviation(tasksCopy.Select(x => x.Interval).ToArray()));
+            Console.WriteLine($"Obciążenie: {lambda / mi}");
+            Console.WriteLine($"Współczynnik zmienności długości zadań: {StandardDeviation(tasksCopy.Select(x => x.Tp).ToArray()) / avgTp}");
+            Console.WriteLine($"Współczynnik zmienności odstępów między zadaniami: {StandardDeviation(tasksCopy.Select(x => x.Interval).ToArray()) / avgIntervalResult}");
         }
 
         private static double StandardDeviation(double[] someDoubles)
