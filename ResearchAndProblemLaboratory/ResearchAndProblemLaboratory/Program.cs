@@ -10,7 +10,37 @@ namespace ResearchAndProblemLaboratory
         const int Phazes = 6;
         const double DTMax = 10;
 
+
         static void Main(string[] args)
+        {
+            var iterations = 1;
+
+            for(var k=1; k<2; k+=1)
+            {
+                var avg_stats = new Stats();
+                avg_stats.reset();
+                for (var i = 0; i < iterations; i++)
+                {
+                    var stats = MainFunction(k);
+                    avg_stats.latenes_avg += stats.latenes_avg;
+                    avg_stats.tasks_on_time += stats.tasks_on_time;
+                    avg_stats.delta_interval += stats.delta_interval;
+                    avg_stats.task_size += stats.task_size;
+                }
+                avg_stats.tasks_on_time = avg_stats.tasks_on_time / iterations;
+                avg_stats.latenes_avg = avg_stats.latenes_avg / iterations;
+                avg_stats.delta_interval = avg_stats.delta_interval / iterations;
+                avg_stats.task_size = avg_stats.task_size / iterations;
+
+                Console.WriteLine($"Final: {avg_stats.tasks_on_time} {avg_stats.latenes_avg}");
+                Console.WriteLine($"k: {k}, task_size: {avg_stats.task_size}");
+                Console.WriteLine("\n");
+                avg_stats.reset();
+            }
+
+        }
+
+        static Stats MainFunction(int k)
         {
             //to nieważne
             //var deltaTaskLength = 0;
@@ -21,7 +51,7 @@ namespace ResearchAndProblemLaboratory
             var avgTaskLength = 0.5;
             var avgInterval = 1;
             var deltaInterval = 0.7;
-            
+
             DataGenerator.avgInterval1 = avgInterval - deltaInterval;
             DataGenerator.avgInterval2 = avgInterval + deltaInterval;
             DataGenerator.erlangShape = 1;
@@ -90,9 +120,12 @@ namespace ResearchAndProblemLaboratory
             var avgTp = tasksCopy.Average(x=>x.Tp);
             var avgIntervalResult = tasksCopy.Average(x => x.Interval);
             var mi = 1 / avgTp;
-            Console.WriteLine($"Obciążenie: {lambda / mi}");
-            Console.WriteLine($"Współczynnik zmienności długości zadań: {StandardDeviation(tasksCopy.Select(x => x.Tp).ToArray()) / avgTp}");
-            Console.WriteLine($"Współczynnik zmienności odstępów między zadaniami: {StandardDeviation(tasksCopy.Select(x => x.Interval).ToArray()) / avgIntervalResult}");
+            //Console.WriteLine($"Obciążenie: {lambda / mi}");
+            //Console.WriteLine($"Współczynnik zmienności długości zadań: {StandardDeviation(tasksCopy.Select(x => x.Tp).ToArray()) / avgTp}");
+            //Console.WriteLine($"Współczynnik zmienności odstępów między zadaniami: {StandardDeviation(tasksCopy.Select(x => x.Interval).ToArray()) / avgIntervalResult}");
+            worker.stats_global.delta_interval = StandardDeviation(tasksCopy.Select(x => x.Interval).ToArray()) / avgIntervalResult;
+            worker.stats_global.task_size = StandardDeviation(tasksCopy.Select(x => x.Tp).ToArray()) / avgTp;
+            return worker.stats_global;
         }
 
         private static double StandardDeviation(double[] someDoubles)
@@ -108,8 +141,13 @@ namespace ResearchAndProblemLaboratory
             public bool IsBusy { get; set; }
             public TaskDefinition CurrentTask { get; set; }
             public double CurrentTaskEndTime { get; set; }
+            public Stats stats_global { get; set; }
 
             private static int _endedTasksCounter = 0;
+
+            private double latenes_avg = 0;
+
+            private double tasks_on_time = 0;
 
             public Worker()
             {
@@ -138,14 +176,49 @@ namespace ResearchAndProblemLaboratory
                     CurrentTask.RemainingTime = Math.Round(CurrentTask.RemainingTime - 0.01, 2);
                     if (CurrentTask.RemainingTime == 0)
                     {
+                        double latenes = CurrentTaskEndTime - (CurrentTask.TS + CurrentTask.Tp + DTMax);
+                        if (latenes > 0)
+                        {
+                            latenes_avg += latenes;
+
+                        }
+                        else
+                        {
+                            tasks_on_time++;
+                        }
                         IsBusy = false;
                         IsTaskFromPoorQueue = false;
                         Console.Title = $"{++_endedTasksCounter}";
                         //Console.WriteLine($"Zakończył się: {CurrentTask.Id}; Task nr: {++_endedTasksCounter}");
+                        if (_endedTasksCounter == Counter)
+                        {
+                            //Console.WriteLine($"on_time: {tasks_on_time / Counter}; avg: {latenes_avg / Counter}");
+                            _endedTasksCounter = 0;
+                            var stats_local = new Stats();
+                            stats_local.latenes_avg = latenes_avg / Counter;
+                            stats_local.tasks_on_time = tasks_on_time / Counter;
+                            stats_global = stats_local;
+                        }
                         CurrentTask = null;
 
                     }
                 }
+            }
+        }
+    
+        public class Stats
+        {
+            public double latenes_avg { get; set; }
+            public double tasks_on_time { get; set; }
+            public double delta_interval { get; set; }
+            public double task_size { get; set; }
+
+            public void reset()
+            {
+                latenes_avg = 0.0;
+                tasks_on_time = 0.0;
+                delta_interval = 0.0;
+                task_size = 0.0;
             }
         }
     }
