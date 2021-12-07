@@ -6,16 +6,16 @@ namespace ResearchAndProblemLaboratory
 {
     class Program
     {
-        const int Counter = 6000;
+        const int Counter = 6;
         const int Phazes = 6;
-        const double DTMax = 10;
+        const double DTMax = 3;
 
 
         static void Main(string[] args)
         {
             var iterations = 1;
 
-            for(var k=1; k<2; k+=1)
+            for (var k = 1; k < 2; k += 1)
             {
                 var avg_stats = new Stats();
                 avg_stats.reset();
@@ -48,9 +48,9 @@ namespace ResearchAndProblemLaboratory
             //DataGenerator.avgtaskLength2 = avgTaskLength + deltaTaskLength;
 
 
-            var avgTaskLength = 0.5;
-            var avgInterval = 1;
-            var deltaInterval = 0.7;
+            var avgTaskLength = 0.95;
+            var avgInterval = 0.2;
+            var deltaInterval = 0;
 
             DataGenerator.avgInterval1 = avgInterval - deltaInterval;
             DataGenerator.avgInterval2 = avgInterval + deltaInterval;
@@ -65,67 +65,20 @@ namespace ResearchAndProblemLaboratory
             var tasks = DataGenerator.GenerateTasksWithErlang(Counter, Phazes, DTMax);
             var tasksCopy = new List<TaskDefinition>(tasks);
 
-            double timer = 0;
-            var worker = new Worker();
-            var basicQueue = new List<TaskDefinition>();
-            var poorQueue = new List<TaskDefinition>();
+            var stats = ClassicalFifo.Run(tasks, Counter, DTMax);
+            //var stats = ExtendedAlgorithm.Run(tasks, Counter, DTMax);
 
-            while (true)
-            {
-                if (tasks.Count == 0 &&
-                    basicQueue.Count == 0 &&
-                    poorQueue.Count == 0 &&
-                    !worker.IsBusy)
-                    break;
-
-                var tasksArrived = tasks.Where(x => x.TS == timer).ToList();
-
-                basicQueue.AddRange(tasksArrived);
-                tasksArrived.ForEach(t => tasks.Remove(t));
-
-                worker.Execute();
-                //foreach (var task in basicQueue)
-                for (int i = 0; i < basicQueue.Count; i++)
-                {
-                    var task = basicQueue[i];
-                    if (task.Sdl >= timer)
-                    {
-                        if (!worker.IsBusy)
-                        {
-                            worker.StartTask(task, timer, basicQueue);
-                        }
-                        else if (worker.IsTaskFromPoorQueue)
-                        {
-                            worker.SendTaskToPoorQueue(poorQueue);
-                            worker.StartTask(task, timer, basicQueue);
-                        }
-                    }
-                    else
-                    {
-                        basicQueue.Remove(task);
-                        poorQueue.Add(task);
-                    }
-                }
-
-                if (!worker.IsBusy && poorQueue.Count > 0)
-                {
-                    var taskToStart = poorQueue.First();
-                    worker.StartTask(taskToStart, timer, poorQueue, true);
-                }
-
-                timer = Math.Round(timer + 0.01, 2);
-            }
             var lambda = tasksCopy.Count / tasksCopy[tasksCopy.Count - 1].TS;
 
-            var avgTp = tasksCopy.Average(x=>x.Tp);
+            var avgTp = tasksCopy.Average(x => x.Tp);
             var avgIntervalResult = tasksCopy.Average(x => x.Interval);
             var mi = 1 / avgTp;
-            //Console.WriteLine($"Obciążenie: {lambda / mi}");
-            //Console.WriteLine($"Współczynnik zmienności długości zadań: {StandardDeviation(tasksCopy.Select(x => x.Tp).ToArray()) / avgTp}");
-            //Console.WriteLine($"Współczynnik zmienności odstępów między zadaniami: {StandardDeviation(tasksCopy.Select(x => x.Interval).ToArray()) / avgIntervalResult}");
-            worker.stats_global.delta_interval = StandardDeviation(tasksCopy.Select(x => x.Interval).ToArray()) / avgIntervalResult;
-            worker.stats_global.task_size = StandardDeviation(tasksCopy.Select(x => x.Tp).ToArray()) / avgTp;
-            return worker.stats_global;
+            Console.WriteLine($"Obciążenie: {lambda / mi}");
+            Console.WriteLine($"Współczynnik zmienności długości zadań: {StandardDeviation(tasksCopy.Select(x => x.Tp).ToArray()) / avgTp}");
+            Console.WriteLine($"Współczynnik zmienności odstępów między zadaniami: {StandardDeviation(tasksCopy.Select(x => x.Interval).ToArray()) / avgIntervalResult}");
+            stats.delta_interval = StandardDeviation(tasksCopy.Select(x => x.Interval).ToArray()) / avgIntervalResult;
+            stats.task_size = StandardDeviation(tasksCopy.Select(x => x.Tp).ToArray()) / avgTp;
+            return stats;
         }
 
         private static double StandardDeviation(double[] someDoubles)
@@ -133,93 +86,6 @@ namespace ResearchAndProblemLaboratory
             double average = someDoubles.Average();
             double sumOfSquaresOfDifferences = someDoubles.Select(val => (val - average) * (val - average)).Sum();
             return Math.Sqrt(sumOfSquaresOfDifferences / someDoubles.Length);
-        }
-
-        public class Worker
-        {
-            public bool IsTaskFromPoorQueue { get; set; }
-            public bool IsBusy { get; set; }
-            public TaskDefinition CurrentTask { get; set; }
-            public double CurrentTaskEndTime { get; set; }
-            public Stats stats_global { get; set; }
-
-            private static int _endedTasksCounter = 0;
-
-            private double latenes_avg = 0;
-
-            private double tasks_on_time = 0;
-
-            public Worker()
-            {
-                IsBusy = false;
-            }
-
-            public void StartTask(TaskDefinition task, double timer, List<TaskDefinition> queue, bool isTaskFromPoorQueue = false)
-            {
-                CurrentTask = task;
-                CurrentTaskEndTime = timer + task.RemainingTime;
-                IsBusy = true;
-                IsTaskFromPoorQueue = isTaskFromPoorQueue;
-                queue.Remove(task);
-            }
-
-            public void SendTaskToPoorQueue(List<TaskDefinition> poorQueue)
-            {
-                poorQueue.Insert(0, CurrentTask);
-                CurrentTask = null;
-            }
-
-            public void Execute()
-            {
-                if (CurrentTask != null)
-                {
-                    CurrentTask.RemainingTime = Math.Round(CurrentTask.RemainingTime - 0.01, 2);
-                    if (CurrentTask.RemainingTime == 0)
-                    {
-                        double latenes = CurrentTaskEndTime - (CurrentTask.TS + CurrentTask.Tp + DTMax);
-                        if (latenes > 0)
-                        {
-                            latenes_avg += latenes;
-
-                        }
-                        else
-                        {
-                            tasks_on_time++;
-                        }
-                        IsBusy = false;
-                        IsTaskFromPoorQueue = false;
-                        Console.Title = $"{++_endedTasksCounter}";
-                        //Console.WriteLine($"Zakończył się: {CurrentTask.Id}; Task nr: {++_endedTasksCounter}");
-                        if (_endedTasksCounter == Counter)
-                        {
-                            //Console.WriteLine($"on_time: {tasks_on_time / Counter}; avg: {latenes_avg / Counter}");
-                            _endedTasksCounter = 0;
-                            var stats_local = new Stats();
-                            stats_local.latenes_avg = latenes_avg / Counter;
-                            stats_local.tasks_on_time = tasks_on_time / Counter;
-                            stats_global = stats_local;
-                        }
-                        CurrentTask = null;
-
-                    }
-                }
-            }
-        }
-    
-        public class Stats
-        {
-            public double latenes_avg { get; set; }
-            public double tasks_on_time { get; set; }
-            public double delta_interval { get; set; }
-            public double task_size { get; set; }
-
-            public void reset()
-            {
-                latenes_avg = 0.0;
-                tasks_on_time = 0.0;
-                delta_interval = 0.0;
-                task_size = 0.0;
-            }
         }
     }
 }
