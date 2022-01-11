@@ -13,6 +13,8 @@ namespace ResearchAndProblemLaboratory
         public static double avgInterval2;
         public static double avgInterval1;
         public static int erlangShape;
+        public static double drawPossibility;
+
         public static List<TaskDefinition> GenerateTasks(int numberOfTasks, int phazes, double DTMax)
         {
             double timer = 0;
@@ -48,16 +50,40 @@ namespace ResearchAndProblemLaboratory
             int taskCounter = 0;
             var taskLengths = GetErlangDistribution(numberOfTasks, erlangShape, erlangShape / avgTaskLengthErlang);
             var allIntervals = new List<double>();
+            var random = new Random();
             for (int i = 0; i < phazes; i++)
             {
-                
-                var intervals =
-                    i % 2 == 0 ?
-                    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgInterval1) :
-                    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgInterval2);
-                allIntervals.AddRange(intervals);
-
-                
+                for(int j = 0; j < numberOfTasks/phazes; j++)
+                {
+                    var isFromFirstAvg = random.Next(1, 101) < drawPossibility * 100;
+                    if (i % 2 == 0)
+                    {
+                        if (isFromFirstAvg)
+                        {
+                            allIntervals.Add(Exponential.Sample(random, 1 / avgInterval1));
+                        }
+                        else
+                        {
+                            allIntervals.Add(Exponential.Sample(random, 1 / avgInterval2));
+                        }
+                    }
+                    else
+                    {
+                        if (isFromFirstAvg)
+                        {
+                            allIntervals.Add(Exponential.Sample(random, 1 / avgInterval2));
+                        }
+                        else
+                        {
+                            allIntervals.Add(Exponential.Sample(random, 1 / avgInterval1));
+                        }
+                    }
+                }
+                //var intervals =
+                //    i % 2 == 0 ?
+                //    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgInterval1) :
+                //    GetExponentialDistribution(numberOfTasks / phazes, 1 / avgInterval2);
+                //allIntervals.AddRange(intervals);
             }
 
             foreach (var (taskLength, interval) in taskLengths.Zip(allIntervals))

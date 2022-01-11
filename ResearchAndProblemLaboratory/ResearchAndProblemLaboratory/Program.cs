@@ -6,8 +6,8 @@ namespace ResearchAndProblemLaboratory
 {
     class Program
     {
-        const int Counter = 6;
-        const int Phazes = 6;
+        const int Counter = 2000;
+        const int Phazes = 2;
         const double DTMax = 3;
 
 
@@ -49,13 +49,14 @@ namespace ResearchAndProblemLaboratory
 
 
             var avgTaskLength = 0.95;
-            var avgInterval = 0.2;
-            var deltaInterval = 0;
+            var avgInterval = 1;
+            var deltaInterval = 0.9;
 
             DataGenerator.avgInterval1 = avgInterval - deltaInterval;
             DataGenerator.avgInterval2 = avgInterval + deltaInterval;
             DataGenerator.erlangShape = 1;
             DataGenerator.avgTaskLengthErlang = avgTaskLength;
+            DataGenerator.drawPossibility = 1;
 
             if (avgInterval <= deltaInterval)
             {
